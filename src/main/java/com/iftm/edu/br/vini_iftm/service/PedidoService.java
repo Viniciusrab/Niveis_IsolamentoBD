@@ -1,53 +1,51 @@
 package com.iftm.edu.br.vini_iftm.service;
 
-import java.time.LocalDateTime;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.iftm.edu.br.vini_iftm.model.DetalhePedido;
-import com.iftm.edu.br.vini_iftm.model.Pedido;
-import com.iftm.edu.br.vini_iftm.model.Produto;
-import com.iftm.edu.br.vini_iftm.repository.DetalhePedidoRepository;
-import com.iftm.edu.br.vini_iftm.repository.PedidoRepository;
-import com.iftm.edu.br.vini_iftm.repository.ProdutoRepository;
+import com.iftm.edu.br.vini_iftm.model.Product;
+import com.iftm.edu.br.vini_iftm.repository.ProductRepository;
 
 @Service
 public class PedidoService {
 
     @Autowired
-    private ProdutoRepository produtoRepository;
-
-    @Autowired
-    private PedidoRepository pedidoRepository;
-
-    @Autowired
-    private DetalhePedidoRepository detalhePedidoRepository;
+    private ProductRepository productRepository;
 
     @Transactional
-    public Pedido processarPedido(Long produtoId, int quantidade, Long clienteId) {
-        Produto produto = produtoRepository.findById(produtoId)
-            .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+    public ResponseEntity<?> processarPedidoSemLock(Long produtoId, Integer quantidade) {
+        Product produto = productRepository.findById(produtoId).orElse(null);
+        if (produto == null || produto.getStock() < quantidade) {
+            return ResponseEntity.status(409).body("Estoque insuficiente ou produto não encontrado.");
+        }
+        produto.setStock(produto.getStock() - quantidade);
+        productRepository.save(produto);
+        return ResponseEntity.ok("Pedido processado com sucesso.");
+    }
 
-        if (produto.getUnidadesEmEstoque() < quantidade) {
-            throw new RuntimeException("Estoque insuficiente");
+    @Transactional
+    public ResponseEntity<?> processarPedidoComLockOtimista(Long produtoId, Integer quantidade) {
+        Product produto = productRepository.findById(produtoId).orElse(null);
+        if (produto == null || produto.getStock() < quantidade) {
+            return ResponseEntity.status(409).body("Estoque insuficiente ou produto não encontrado.");
         }
 
-        produto.setUnidadesEmEstoque(produto.getUnidadesEmEstoque() - quantidade);
-        produtoRepository.save(produto);
+        produto.setStock(produto.getStock() - quantidade);
+        productRepository.save(produto);
+        return ResponseEntity.ok("Pedido processado com sucesso.");
+    }
 
-        Pedido pedido = new Pedido();
-        pedido.setClienteId(clienteId);
-        pedido.setData(LocalDateTime.now());
-        pedido = pedidoRepository.save(pedido);
+    @Transactional
+    public synchronized ResponseEntity<?> processarPedidoComLockPessimista(Long produtoId, Integer quantidade) {
+        Product produto = productRepository.findById(produtoId).orElse(null);
+        if (produto == null || produto.getStock() < quantidade) {
+            return ResponseEntity.status(409).body("Estoque insuficiente ou produto não encontrado.");
+        }
 
-        DetalhePedido detalhe = new DetalhePedido();
-        detalhe.setPedido(pedido);
-        detalhe.setProduto(produto);
-        detalhe.setQuantidade(quantidade);
-        detalhePedidoRepository.save(detalhe);
-
-        return pedido;
+        produto.setStock(produto.getStock() - quantidade);
+        productRepository.save(produto);
+        return ResponseEntity.ok("Pedido processado com sucesso.");
     }
 }
