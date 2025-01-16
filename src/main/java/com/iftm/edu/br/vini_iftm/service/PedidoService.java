@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.iftm.edu.br.vini_iftm.model.Product;
 import com.iftm.edu.br.vini_iftm.repository.ProductRepository;
 
+import jakarta.persistence.OptimisticLockException;
+
 @Service
 public class PedidoService {
 
@@ -26,7 +28,8 @@ public class PedidoService {
     }
 
     @Transactional
-    public ResponseEntity<?> processarPedidoComLockOtimista(Long produtoId, Integer quantidade) {
+public ResponseEntity<?> processarPedidoComLockOtimista(Long produtoId, Integer quantidade) {
+    try {
         Product produto = productRepository.findById(produtoId).orElse(null);
         if (produto == null || produto.getStock() < quantidade) {
             return ResponseEntity.status(409).body("Estoque insuficiente ou produto não encontrado.");
@@ -34,18 +37,25 @@ public class PedidoService {
 
         produto.setStock(produto.getStock() - quantidade);
         productRepository.save(produto);
+
         return ResponseEntity.ok("Pedido processado com sucesso.");
+
+    } catch (OptimisticLockException e) {
+        return ResponseEntity.status(409).body("Concorrência detectada. Tente novamente.");
     }
+}
 
     @Transactional
-    public synchronized ResponseEntity<?> processarPedidoComLockPessimista(Long produtoId, Integer quantidade) {
-        Product produto = productRepository.findById(produtoId).orElse(null);
-        if (produto == null || produto.getStock() < quantidade) {
-            return ResponseEntity.status(409).body("Estoque insuficiente ou produto não encontrado.");
-        }
-
-        produto.setStock(produto.getStock() - quantidade);
-        productRepository.save(produto);
-        return ResponseEntity.ok("Pedido processado com sucesso.");
+public ResponseEntity<?> processarPedidoComLockPessimista(Long produtoId, Integer quantidade) {
+    Product produto = productRepository.findByIdWithLock(produtoId);
+    
+    if (produto == null || produto.getStock() < quantidade) {
+        return ResponseEntity.status(409).body("Estoque insuficiente ou produto não encontrado.");
     }
+
+    produto.setStock(produto.getStock() - quantidade);
+    productRepository.save(produto);
+    
+    return ResponseEntity.ok("Pedido processado com sucesso.");
+}
 }
