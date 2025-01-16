@@ -1,0 +1,29 @@
+[2025-01-16 14:00:01] INFO  PedidoService - Recebendo pedido: produtoId=1, quantidade=3 (Sem Lock)
+[2025-01-16 14:00:01] INFO  PedidoService - Estoque atual: 100
+[2025-01-16 14:00:01] INFO  PedidoService - Pedido processado com sucesso. Novo estoque: 97
+
+[2025-01-16 14:00:02] INFO  PedidoService - Recebendo pedido: produtoId=1, quantidade=5 (Lock Otimista)
+[2025-01-16 14:00:02] INFO  PedidoService - Estoque atual: 97
+[2025-01-16 14:00:02] INFO  PedidoService - Pedido processado com sucesso. Novo estoque: 92
+
+[2025-01-16 14:00:03] INFO  PedidoService - Recebendo pedido: produtoId=1, quantidade=2 (Lock Pessimista)
+[2025-01-16 14:00:03] INFO  PedidoService - Estoque atual: 92
+[2025-01-16 14:00:03] INFO  PedidoService - Pedido processado com sucesso. Novo estoque: 90
+
+[2025-01-16 14:00:04] WARN  PedidoService - Pedido rejeitado: produtoId=1, quantidade=15 (Sem Lock) - Estoque insuficiente
+[2025-01-16 14:00:04] ERROR PedidoService - Erro ao processar pedido: produtoId=2, quantidade=5 - Produto não encontrado
+
+[2025-01-16 14:00:05] INFO  PedidoService - Recebendo pedido: produtoId=3, quantidade=4 (Lock Otimista)
+[2025-01-16 14:00:05] INFO  PedidoService - Estoque atual: 50
+[2025-01-16 14:00:05] INFO  PedidoService - Pedido processado com sucesso. Novo estoque: 46
+
+[2025-01-16 14:00:06] INFO  PedidoService - Recebendo pedido: produtoId=3, quantidade=1 (Lock Pessimista)
+[2025-01-16 14:00:06] INFO  PedidoService - Estoque atual: 46
+[2025-01-16 14:00:06] INFO  PedidoService - Pedido processado com sucesso. Novo estoque: 45
+
+[2025-01-16 14:00:07] INFO  PedidoService - Resumo do processamento:
+ - Requisições bem-sucedidas: 5
+ - Requisições com erro (409 - estoque insuficiente): 1
+ - Requisições com erro (404 - produto não encontrado): 1
+ - Tempo médio de resposta: 120ms
+ - Tempo total de execução: 1.2s
